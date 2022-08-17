@@ -1,0 +1,1 @@
+self.__MIDDLEWARE_MANIFEST=function(_){return[["/account",_],["/api/app",_],["/app",_],["/mods",_],["/mods/private-feed",_],["/pub",_]]}(!1),self.__MIDDLEWARE_MANIFEST_CB&&self.__MIDDLEWARE_MANIFEST_CB();
