@@ -11101,7 +11101,7 @@
                                                                     children: (0, i.jsx)("a", {
                                                                         href: "/home/",
                                                                         className: (0, A.CN)("overflow-hidden w-full hover:underline underline-offset-2 shrink cursor-pointer", ""),
-                                                                        children: "Midjourney",
+                                                                        children: "seena pourzand",
                                                                     }),
                                                                 }),
                                                                 (0, i.jsx)("button", {
