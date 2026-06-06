@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Win95 Desktop</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  html, body { width: 100%; height: 100%; overflow: hidden; font-family: "MS Sans Serif", "Tahoma", Arial, sans-serif; font-size: 11px; background: #008080; }
+
+  /* ── Win95 3D border utilities ── */
+  .raised {
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+  }
+  .sunken {
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+  }
+  .inset {
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff;
+    border-bottom: 1px solid #ffffff;
+  }
+
+  /* ── Desktop layout ── */
+  #desktop {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+  }
+
+  #columns-area {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    padding: 6px;
+    gap: 0;
+  }
+
+  /* ── Column ── */
+  .column {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    padding: 4px;
+    gap: 0;
+  }
+  .column-divider {
+    width: 5px;
+    background: #c0c0c0;
+    flex-shrink: 0;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #ffffff;
+    cursor: col-resize;
+  }
+
+  /* ── Windows stack inside column ── */
+  .windows-stack {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+  }
+
+  /* ── Window ── */
+  .win-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .win-wrapper.flex-win {
+    flex: 1;
+  }
+  .win-wrapper.minimized {
+    flex: none !important;
+  }
+
+  .window {
+    display: flex;
+    flex-direction: column;
+    background: #c0c0c0;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .window.raised {
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+  }
+
+  /* Title bar */
+  .title-bar {
+    display: flex;
+    align-items: center;
+    height: 20px;
+    min-height: 20px;
+    background: linear-gradient(to right, #000080, #1084d0);
+    padding: 2px 3px;
+    flex-shrink: 0;
+    cursor: default;
+  }
+  .title-bar-text {
+    flex: 1;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 2px;
+  }
+  .title-bar-icon {
+    font-size: 12px;
+    margin-right: 4px;
+  }
+  .title-btn {
+    width: 16px;
+    height: 14px;
+    background: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    font-size: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 2px;
+    color: #000;
+    font-weight: bold;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .title-btn:active {
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+  }
+
+  /* Menu bar */
+  .menu-bar {
+    display: flex;
+    background: #c0c0c0;
+    padding: 2px 4px;
+    flex-shrink: 0;
+    height: 20px;
+    align-items: center;
+    border-bottom: 1px solid #808080;
+  }
+  .menu-item {
+    padding: 1px 8px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  .menu-item:hover { background: #000080; color: #fff; }
+
+  /* Content area */
+  .win-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 2px;
+  }
+
+  /* Resize handle between windows */
+  .h-resizer {
+    height: 5px;
+    background: #c0c0c0;
+    flex-shrink: 0;
+    cursor: row-resize;
+    border-top: 2px solid #808080;
+    border-bottom: 2px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .h-resizer::after {
+    content: '· · · · ·';
+    font-size: 6px;
+    color: #808080;
+    letter-spacing: 2px;
+  }
+
+  /* Add window button */
+  .add-win-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 22px;
+    min-height: 22px;
+    margin: 4px 2px 2px;
+    background: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    cursor: pointer;
+    font-size: 11px;
+    flex-shrink: 0;
+    color: #000;
+  }
+  .add-win-btn:active {
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    padding: 1px 0 0 1px;
+  }
+
+  /* ── Taskbar ── */
+  #taskbar {
+    height: 32px;
+    min-height: 32px;
+    background: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    gap: 4px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  #start-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+    padding: 0 8px;
+    background: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 11px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  #start-btn:active {
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+  }
+  #start-btn .win-logo {
+    font-size: 16px;
+  }
+
+  .taskbar-divider {
+    width: 2px;
+    height: 24px;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff;
+    flex-shrink: 0;
+  }
+
+  #taskbar-windows {
+    display: flex;
+    gap: 3px;
+    flex: 1;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .taskbar-win-btn {
+    height: 22px;
+    padding: 0 8px;
+    background: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    cursor: pointer;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+    min-width: 60px;
+  }
+  .taskbar-win-btn.active {
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+  }
+
+  #taskbar-clock {
+    height: 22px;
+    padding: 2px 8px;
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff;
+    border-bottom: 1px solid #ffffff;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── Text / Markdown window ── */
+  .text-win-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+  .text-toolbar {
+    display: flex;
+    gap: 2px;
+    padding: 2px 4px;
+    background: #c0c0c0;
+    border-bottom: 1px solid #808080;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .text-toolbar button {
+    padding: 1px 6px;
+    background: #c0c0c0;
+    border-top: 1px solid #ffffff;
+    border-left: 1px solid #ffffff;
+    border-right: 1px solid #808080;
+    border-bottom: 1px solid #808080;
+    cursor: pointer;
+    font-size: 10px;
+    font-family: inherit;
+    min-width: 28px;
+  }
+  .text-toolbar button:active, .text-toolbar button.active {
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff;
+    border-bottom: 1px solid #ffffff;
+  }
+  .text-edit-area {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .text-editor {
+    flex: 1;
+    border: none;
+    resize: none;
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    padding: 6px;
+    background: #ffffff;
+    outline: none;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .text-preview {
+    flex: 1;
+    padding: 6px;
+    background: #ffffff;
+    overflow-y: auto;
+    min-height: 0;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .text-preview h1 { font-size: 18px; font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #ccc; }
+  .text-preview h2 { font-size: 15px; font-weight: bold; margin-bottom: 5px; }
+  .text-preview h3 { font-size: 13px; font-weight: bold; margin-bottom: 4px; }
+  .text-preview p { margin-bottom: 6px; }
+  .text-preview ul, .text-preview ol { margin-left: 18px; margin-bottom: 6px; }
+  .text-preview code { font-family: "Courier New", monospace; background: #f0f0f0; padding: 0 2px; font-size: 11px; }
+  .text-preview pre { background: #f0f0f0; padding: 6px; overflow-x: auto; font-size: 11px; margin-bottom: 6px; border: 1px solid #ccc; }
+  .text-preview blockquote { border-left: 3px solid #808080; padding-left: 8px; color: #555; margin-bottom: 6px; }
+  .text-preview a { color: #0000cc; }
+  .text-preview strong { font-weight: bold; }
+  .text-preview em { font-style: italic; }
+
+  /* ── Stock window ── */
+  .stock-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    background: #c0c0c0;
+  }
+  .stock-toolbar {
+    display: flex;
+    gap: 4px;
+    padding: 4px 6px;
+    border-bottom: 1px solid #808080;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    background: #c0c0c0;
+  }
+  .stock-toolbar label { font-size: 10px; }
+  .stock-input {
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff;
+    border-bottom: 1px solid #ffffff;
+    padding: 1px 3px;
+    font-family: inherit;
+    font-size: 11px;
+    width: 120px;
+    background: #fff;
+    outline: none;
+  }
+  .range-btns { display: flex; gap: 2px; }
+  .range-btn {
+    padding: 1px 5px;
+    font-size: 10px;
+    font-family: inherit;
+    background: #c0c0c0;
+    border-top: 1px solid #ffffff;
+    border-left: 1px solid #ffffff;
+    border-right: 1px solid #808080;
+    border-bottom: 1px solid #808080;
+    cursor: pointer;
+  }
+  .range-btn.active {
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff;
+    border-bottom: 1px solid #ffffff;
+    background: #a0a0a0;
+  }
+  .stock-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .stock-card {
+    background: #fff;
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff;
+    border-bottom: 1px solid #ffffff;
+    padding: 4px 6px;
+  }
+  .stock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3px;
+  }
+  .stock-symbol { font-weight: bold; font-size: 12px; }
+  .stock-price { font-size: 12px; }
+  .stock-change.up { color: #008000; font-weight: bold; }
+  .stock-change.down { color: #cc0000; font-weight: bold; }
+  .stock-chart-wrap {
+    width: 100%;
+    overflow: hidden;
+  }
+  .stock-chart-wrap svg {
+    display: block;
+    width: 100%;
+  }
+  .stock-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    color: #555;
+    font-size: 11px;
+  }
+
+  /* ── Modal dialog ── */
+  .modal-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal-dialog {
+    background: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    min-width: 240px;
+    box-shadow: 4px 4px 0 #000000;
+  }
+  .modal-title-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 20px;
+    background: linear-gradient(to right, #000080, #1084d0);
+    padding: 2px 3px;
+  }
+  .modal-title-text {
+    color: #fff;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  .modal-body {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .modal-body label { font-size: 11px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .modal-body input[type="radio"] { cursor: pointer; }
+  .modal-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    padding: 8px 16px 12px;
+  }
+  .modal-btn {
+    min-width: 64px;
+    height: 22px;
+    padding: 0 8px;
+    background: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: inherit;
+  }
+  .modal-btn:active {
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+  }
+  .modal-btn.default-btn {
+    border: 3px solid #000;
+    border-top-color: #ffffff;
+    border-left-color: #ffffff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    outline: 1px solid #000;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 16px; height: 16px; }
+  ::-webkit-scrollbar-track { background: #c0c0c0; }
+  ::-webkit-scrollbar-thumb {
+    background: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+  }
+  ::-webkit-scrollbar-button { background: #c0c0c0; display: block; height: 16px; width: 16px; }
+  ::-webkit-scrollbar-corner { background: #c0c0c0; }
+
+  .user-select-text { user-select: text; }
+  .no-select { user-select: none; }
+</style>
+</head>
+<body>
+
+<div id="desktop">
+  <div id="columns-area"></div>
+  <div id="taskbar">
+    <button id="start-btn">
+      <span class="win-logo">🪟</span>
+      <strong>Start</strong>
+    </button>
+    <div class="taskbar-divider"></div>
+    <div id="taskbar-windows"></div>
+    <div class="taskbar-divider"></div>
+    <div id="taskbar-clock"></div>
+  </div>
+</div>
+
+<!-- Modal container (absolute over full desktop) -->
+<div id="modal-root"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// STATE & PERSISTENCE
+// ══════════════════════════════════════════════════════
+const STORAGE_KEY = 'win95_desktop_v2';
+
+function defaultState() {
+  return {
+    columns: [
+      { id: 'col-0', flexBasis: null, windows: [
+        { id: 'w-' + uid(), type: 'text', title: 'Welcome', flexBasis: null, minimized: false,
+          content: '# Welcome to Win95 Desktop\n\nThis is a **retro-styled** desktop app.\n\n## Features\n- Three resizable columns\n- Text/Markdown windows\n- Stock ticker windows\n- Drag to resize windows\n- Persistent state via localStorage\n\n## How to use\nClick **+ Add Window** at the bottom of any column to add a new window.\n\nTry editing this text — it saves automatically!\n\n```\nCode blocks work too\n```\n\n> Blockquotes look great' }
+      ]},
+      { id: 'col-1', flexBasis: null, windows: [
+        { id: 'w-' + uid(), type: 'stock', title: 'Markets', flexBasis: null, minimized: false,
+          symbols: ['AAPL', 'TSLA', 'MSFT', 'GOOGL'], range: '1W' }
+      ]},
+      { id: 'col-2', flexBasis: null, windows: [] }
+    ]
+  };
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && Array.isArray(s.columns)) return s;
+    }
+  } catch(e) {}
+  return defaultState();
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch(e) {}
+}
+
+let state = loadState();
+let saveTimer = null;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 800);
+}
+
+// ══════════════════════════════════════════════════════
+// STOCK DATA (stubbed with realistic-looking fake data)
+// ══════════════════════════════════════════════════════
+/*
+  TO USE REAL DATA: Replace generateStockData() with fetch calls to:
+  - Alpha Vantage: https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=AAPL&apikey=YOUR_KEY
+  - Yahoo Finance (unofficial): https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1wk
+*/
+const STOCK_BASE = {
+  AAPL: { base: 189.5, name: 'Apple Inc.' },
+  TSLA: { base: 248.0, name: 'Tesla Inc.' },
+  MSFT: { base: 415.2, name: 'Microsoft Corp.' },
+  GOOGL: { base: 172.8, name: 'Alphabet Inc.' },
+  AMZN: { base: 198.4, name: 'Amazon.com Inc.' },
+  META: { base: 505.3, name: 'Meta Platforms' },
+  NVDA: { base: 875.4, name: 'NVIDIA Corp.' },
+  SPY:  { base: 522.1, name: 'S&P 500 ETF' },
+  BTC:  { base: 67200, name: 'Bitcoin USD' },
+};
+
+const RANGE_POINTS = { '1D': 24, '1W': 30, '1M': 31, '6M': 26, '1Y': 52 };
+const RANGE_LABELS = { '1D': 'hrs', '1W': 'days', '1M': 'days', '6M': 'weeks', '1Y': 'weeks' };
+
+function generateStockData(symbol, range) {
+  const info = STOCK_BASE[symbol] || { base: 100 + Math.random() * 200, name: symbol };
+  const n = RANGE_POINTS[range] || 30;
+  const seed = symbol.charCodeAt(0) + symbol.charCodeAt(symbol.length-1) + range.charCodeAt(0);
+  const rng = (i) => Math.sin(seed * 9301 + i * 49297 + 233) * 0.5 + 0.5;
+  const volatility = { '1D': 0.008, '1W': 0.025, '1M': 0.06, '6M': 0.15, '1Y': 0.3 }[range] || 0.025;
+  let price = info.base * (0.88 + rng(0) * 0.24);
+  const prices = [];
+  for (let i = 0; i < n; i++) {
+    const change = (rng(i * 3 + 1) - 0.48) * 2 * volatility;
+    price = price * (1 + change);
+    prices.push(price);
+  }
+  prices[prices.length - 1] = info.base * (0.9 + rng(n + 7) * 0.2);
+  const current = prices[prices.length - 1];
+  const prev = prices[prices.length - 2] || prices[0];
+  const changeAmt = current - prev;
+  const changePct = (changeAmt / prev) * 100;
+  return { prices, current, changeAmt, changePct, name: info.name };
+}
+
+function renderSparkline(prices, isUp, width, height) {
+  if (!prices || prices.length < 2) return '';
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  const pts = prices.map((p, i) => {
+    const x = (i / (prices.length - 1)) * width;
+    const y = height - ((p - min) / range) * (height - 4) - 2;
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  const color = isUp ? '#008000' : '#cc0000';
+  const firstX = 0, lastX = width;
+  const firstY = height - ((prices[0] - min) / range) * (height - 4) - 2;
+  const lastY = height - ((prices[prices.length-1] - min) / range) * (height - 4) - 2;
+  const areaPath = `M${firstX},${height} L${firstX},${firstY.toFixed(1)} L${pts.split(' ').map((p,i,a) => i===0?p:p).join(' L')} L${lastX},${height} Z`;
+  return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width:100%;height:${height}px">
+    <defs><linearGradient id="g${isUp?'u':'d'}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.25"/><stop offset="100%" stop-color="${color}" stop-opacity="0.02"/></linearGradient></defs>
+    <polygon points="${firstX},${height} ${pts} ${lastX},${height}" fill="url(#g${isUp?'u':'d'})" />
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" />
+  </svg>`;
+}
+
+// ══════════════════════════════════════════════════════
+// WINDOW TYPE REGISTRY
+// ══════════════════════════════════════════════════════
+const WINDOW_TYPES = {
+  text: {
+    label: 'Text / Markdown',
+    icon: '📝',
+    defaultTitle: 'New Note',
+    create: () => ({ content: '# New Note\n\nStart typing here...', mode: 'split' }),
+    render: renderTextWindow,
+  },
+  stock: {
+    label: 'Stock Ticker',
+    icon: '📈',
+    defaultTitle: 'Markets',
+    create: () => ({ symbols: ['AAPL', 'TSLA', 'MSFT'], range: '1W' }),
+    render: renderStockWindow,
+  },
+};
+
+// ══════════════════════════════════════════════════════
+// RENDER ENGINE
+// ══════════════════════════════════════════════════════
+function render() {
+  const area = document.getElementById('columns-area');
+  area.innerHTML = '';
+
+  state.columns.forEach((col, ci) => {
+    if (ci > 0) {
+      const div = document.createElement('div');
+      div.className = 'column-divider';
+      div.dataset.ci = ci;
+      area.appendChild(div);
+      setupColumnDividerDrag(div, ci - 1, ci);
+    }
+
+    const colEl = document.createElement('div');
+    colEl.className = 'column';
+    colEl.dataset.ci = ci;
+    if (col.flexBasis) {
+      colEl.style.flex = `0 0 ${col.flexBasis}px`;
+    } else {
+      colEl.style.flex = '1';
+    }
+
+    const stack = document.createElement('div');
+    stack.className = 'windows-stack';
+    colEl.appendChild(stack);
+
+    const activeWins = col.windows;
+    activeWins.forEach((win, wi) => {
+      if (wi > 0) {
+        const resizer = document.createElement('div');
+        resizer.className = 'h-resizer';
+        resizer.dataset.ci = ci;
+        resizer.dataset.wi = wi;
+        stack.appendChild(resizer);
+        setupWindowResizer(resizer, ci, wi - 1, wi);
+      }
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'win-wrapper';
+      wrapper.dataset.wid = win.id;
+
+      if (win.minimized) {
+        wrapper.classList.add('minimized');
+        wrapper.style.flex = 'none';
+      } else if (win.flexBasis) {
+        wrapper.style.flex = `0 0 ${win.flexBasis}px`;
+      } else {
+        wrapper.classList.add('flex-win');
+      }
+
+      const winEl = buildWindowChrome(win, ci, wi);
+      wrapper.appendChild(winEl);
+      stack.appendChild(wrapper);
+    });
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-win-btn';
+    addBtn.textContent = '+ Add Window';
+    addBtn.addEventListener('click', () => showAddWindowModal(ci));
+    colEl.appendChild(addBtn);
+
+    area.appendChild(colEl);
+  });
+
+  updateTaskbar();
+}
+
+function buildWindowChrome(win, ci, wi) {
+  const winEl = document.createElement('div');
+  winEl.className = 'window raised';
+
+  // Title bar
+  const tb = document.createElement('div');
+  tb.className = 'title-bar';
+
+  const icon = document.createElement('span');
+  icon.className = 'title-bar-icon';
+  icon.textContent = WINDOW_TYPES[win.type]?.icon || '🗔';
+  tb.appendChild(icon);
+
+  const titleText = document.createElement('span');
+  titleText.className = 'title-bar-text';
+  titleText.textContent = win.title || 'Window';
+  tb.appendChild(titleText);
+
+  // Min button
+  const minBtn = document.createElement('button');
+  minBtn.className = 'title-btn';
+  minBtn.textContent = '_';
+  minBtn.title = 'Minimize';
+  minBtn.addEventListener('click', () => {
+    win.minimized = !win.minimized;
+    if (win.minimized) win.flexBasis = null;
+    scheduleSave();
+    render();
+  });
+  tb.appendChild(minBtn);
+
+  // Close button
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'title-btn';
+  closeBtn.textContent = '×';
+  closeBtn.title = 'Close';
+  closeBtn.addEventListener('click', () => {
+    const col = state.columns[ci];
+    col.windows.splice(col.windows.indexOf(win), 1);
+    scheduleSave();
+    render();
+  });
+  tb.appendChild(closeBtn);
+  winEl.appendChild(tb);
+
+  if (!win.minimized) {
+    // Menu bar (just for text windows)
+    if (win.type === 'text') {
+      const mb = document.createElement('div');
+      mb.className = 'menu-bar';
+      ['File', 'Edit', 'View'].forEach(m => {
+        const mi = document.createElement('span');
+        mi.className = 'menu-item';
+        mi.textContent = m;
+        mb.appendChild(mi);
+      });
+      winEl.appendChild(mb);
+    }
+
+    // Content
+    const contentEl = document.createElement('div');
+    contentEl.className = 'win-content';
+    const typeObj = WINDOW_TYPES[win.type];
+    if (typeObj) {
+      typeObj.render(contentEl, win, ci, wi);
+    }
+    winEl.appendChild(contentEl);
+  }
+
+  return winEl;
+}
+
+// ══════════════════════════════════════════════════════
+// TEXT WINDOW RENDERER
+// ══════════════════════════════════════════════════════
+function renderTextWindow(container, win) {
+  if (!win.mode) win.mode = 'split';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'text-win-container';
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'text-toolbar';
+
+  const modes = [
+    { key: 'edit', label: 'Edit' },
+    { key: 'preview', label: 'Preview' },
+    { key: 'split', label: 'Split' },
+  ];
+  modes.forEach(m => {
+    const btn = document.createElement('button');
+    btn.textContent = m.label;
+    if (win.mode === m.key) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      win.mode = m.key;
+      scheduleSave();
+      renderTextWindow(container, win);
+    });
+    toolbar.appendChild(btn);
+  });
+
+  // Word count
+  const wc = document.createElement('span');
+  wc.style.cssText = 'margin-left:auto;font-size:10px;color:#555;padding:2px 4px;';
+  const words = (win.content || '').trim().split(/\s+/).filter(Boolean).length;
+  wc.textContent = words + ' words';
+  toolbar.appendChild(wc);
+
+  wrap.appendChild(toolbar);
+
+  const editArea = document.createElement('div');
+  editArea.className = 'text-edit-area';
+
+  if (win.mode === 'edit' || win.mode === 'split') {
+    const ta = document.createElement('textarea');
+    ta.className = 'text-editor user-select-text';
+    ta.value = win.content || '';
+    ta.placeholder = 'Start typing Markdown here...';
+    if (win.mode === 'split') ta.style.borderRight = '2px solid #808080';
+    ta.addEventListener('input', () => {
+      win.content = ta.value;
+      if (win.mode === 'split') updatePreview();
+      // update word count
+      const w = ta.value.trim().split(/\s+/).filter(Boolean).length;
+      wc.textContent = w + ' words';
+      scheduleSave();
+    });
+    editArea.appendChild(ta);
+
+    if (win.mode === 'split') {
+      const preview = document.createElement('div');
+      preview.className = 'text-preview user-select-text';
+      function updatePreview() {
+        try {
+          preview.innerHTML = marked.parse(win.content || '');
+        } catch(e) {
+          preview.innerHTML = '<em>Parse error</em>';
+        }
+      }
+      updatePreview();
+      editArea.appendChild(preview);
+    }
+  } else {
+    // preview only
+    const preview = document.createElement('div');
+    preview.className = 'text-preview user-select-text';
+    try {
+      preview.innerHTML = marked.parse(win.content || '');
+    } catch(e) {
+      preview.innerHTML = '<em>Parse error</em>';
+    }
+    editArea.appendChild(preview);
+  }
+
+  wrap.appendChild(editArea);
+  container.innerHTML = '';
+  container.appendChild(wrap);
+}
+
+// ══════════════════════════════════════════════════════
+// STOCK WINDOW RENDERER
+// ══════════════════════════════════════════════════════
+function renderStockWindow(container, win) {
+  if (!win.symbols) win.symbols = ['AAPL', 'TSLA', 'MSFT'];
+  if (!win.range) win.range = '1W';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'stock-container';
+
+  // Toolbar
+  const toolbar = document.createElement('div');
+  toolbar.className = 'stock-toolbar';
+
+  const lbl = document.createElement('label');
+  lbl.textContent = 'Symbols:';
+  toolbar.appendChild(lbl);
+
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'stock-input';
+  inp.value = win.symbols.join(', ');
+  inp.title = 'Comma-separated stock symbols';
+  let inputTimer;
+  inp.addEventListener('input', () => {
+    clearTimeout(inputTimer);
+    inputTimer = setTimeout(() => {
+      win.symbols = inp.value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+      scheduleSave();
+      refreshStockBody();
+    }, 600);
+  });
+  toolbar.appendChild(inp);
+
+  const ranges = ['1D', '1W', '1M', '6M', '1Y'];
+  const rangeWrap = document.createElement('div');
+  rangeWrap.className = 'range-btns';
+  ranges.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'range-btn' + (win.range === r ? ' active' : '');
+    btn.textContent = r;
+    btn.addEventListener('click', () => {
+      win.range = r;
+      rangeWrap.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      scheduleSave();
+      refreshStockBody();
+    });
+    rangeWrap.appendChild(btn);
+  });
+  toolbar.appendChild(rangeWrap);
+  wrap.appendChild(toolbar);
+
+  // Body
+  const body = document.createElement('div');
+  body.className = 'stock-body';
+  wrap.appendChild(body);
+
+  function refreshStockBody() {
+    body.innerHTML = '';
+    win.symbols.forEach(sym => {
+      const card = document.createElement('div');
+      card.className = 'stock-card';
+
+      const loading = document.createElement('div');
+      loading.className = 'stock-loading';
+      loading.textContent = 'Loading ' + sym + '...';
+      card.appendChild(loading);
+      body.appendChild(card);
+
+      // Simulate async load
+      setTimeout(() => {
+        const data = generateStockData(sym, win.range);
+        const isUp = data.changePct >= 0;
+        const chartH = 50;
+        const chartW = 300;
+
+        card.innerHTML = `
+          <div class="stock-header">
+            <div>
+              <span class="stock-symbol">${sym}</span>
+              <span style="font-size:9px;color:#555;margin-left:4px;">${data.name}</span>
+            </div>
+            <div style="text-align:right">
+              <span class="stock-price">$${data.current.toFixed(2)}</span><br>
+              <span class="stock-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${Math.abs(data.changeAmt).toFixed(2)} (${Math.abs(data.changePct).toFixed(2)}%)</span>
+            </div>
+          </div>
+          <div class="stock-chart-wrap">
+            ${renderSparkline(data.prices, isUp, chartW, chartH)}
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:#808080;margin-top:2px;">
+            <span>${win.range} ago</span><span>${RANGE_LABELS[win.range]}</span><span>Now</span>
+          </div>
+        `;
+      }, Math.random() * 80 + 20);
+    });
+  }
+
+  refreshStockBody();
+
+  container.innerHTML = '';
+  container.appendChild(wrap);
+}
+
+// ══════════════════════════════════════════════════════
+// DRAG RESIZING — Horizontal window resizer
+// ══════════════════════════════════════════════════════
+function setupWindowResizer(resizerEl, ci, wiAbove, wiBelow) {
+  resizerEl.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const col = state.columns[ci];
+    const colEl = document.querySelector(`.column[data-ci="${ci}"]`);
+    const colH = colEl ? colEl.getBoundingClientRect().height : 600;
+
+    const wAbove = col.windows[wiAbove];
+    const wBelow = col.windows[wiBelow];
+
+    const stackEl = colEl ? colEl.querySelector('.windows-stack') : null;
+    const wrapperAbove = stackEl ? stackEl.querySelector(`[data-wid="${wAbove.id}"]`) : null;
+    const wrapperBelow = stackEl ? stackEl.querySelector(`[data-wid="${wBelow.id}"]`) : null;
+
+    const startY = e.clientY;
+    const startAboveH = wrapperAbove ? wrapperAbove.getBoundingClientRect().height : colH / 2;
+    const startBelowH = wrapperBelow ? wrapperBelow.getBoundingClientRect().height : colH / 2;
+
+    const onMove = (e) => {
+      const dy = e.clientY - startY;
+      const newAboveH = Math.max(80, startAboveH + dy);
+      const newBelowH = Math.max(80, startBelowH - dy);
+      wAbove.flexBasis = newAboveH;
+      wBelow.flexBasis = newBelowH;
+      if (wrapperAbove) {
+        wrapperAbove.style.flex = `0 0 ${newAboveH}px`;
+        wrapperAbove.classList.remove('flex-win');
+      }
+      if (wrapperBelow) {
+        wrapperBelow.style.flex = `0 0 ${newBelowH}px`;
+        wrapperBelow.classList.remove('flex-win');
+      }
+      scheduleSave();
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// DRAG RESIZING — Column divider
+// ══════════════════════════════════════════════════════
+function setupColumnDividerDrag(divEl, ciLeft, ciRight) {
+  divEl.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const area = document.getElementById('columns-area');
+    const areaRect = area.getBoundingClientRect();
+
+    const colLeftEl = document.querySelector(`.column[data-ci="${ciLeft}"]`);
+    const colRightEl = document.querySelector(`.column[data-ci="${ciRight}"]`);
+
+    const startX = e.clientX;
+    const startLeftW = colLeftEl ? colLeftEl.getBoundingClientRect().width : 300;
+    const startRightW = colRightEl ? colRightEl.getBoundingClientRect().width : 300;
+
+    const onMove = (e) => {
+      const dx = e.clientX - startX;
+      const newLeft = Math.max(150, startLeftW + dx);
+      const newRight = Math.max(150, startRightW - dx);
+      state.columns[ciLeft].flexBasis = newLeft;
+      state.columns[ciRight].flexBasis = newRight;
+      if (colLeftEl) colLeftEl.style.flex = `0 0 ${newLeft}px`;
+      if (colRightEl) colRightEl.style.flex = `0 0 ${newRight}px`;
+      scheduleSave();
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// ADD WINDOW MODAL
+// ══════════════════════════════════════════════════════
+function showAddWindowModal(ci) {
+  const root = document.getElementById('modal-root');
+  root.innerHTML = '';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal();
+  });
+
+  const dialog = document.createElement('div');
+  dialog.className = 'modal-dialog';
+
+  const titleBar = document.createElement('div');
+  titleBar.className = 'modal-title-bar';
+  const titleText = document.createElement('span');
+  titleText.className = 'modal-title-text';
+  titleText.textContent = 'Add New Window';
+  titleBar.appendChild(titleText);
+  const xBtn = document.createElement('button');
+  xBtn.className = 'title-btn';
+  xBtn.textContent = '×';
+  xBtn.addEventListener('click', closeModal);
+  titleBar.appendChild(xBtn);
+  dialog.appendChild(titleBar);
+
+  const body = document.createElement('div');
+  body.className = 'modal-body';
+
+  const label0 = document.createElement('div');
+  label0.textContent = 'Select window type:';
+  label0.style.fontWeight = 'bold';
+  body.appendChild(label0);
+
+  let selectedType = 'text';
+  Object.entries(WINDOW_TYPES).forEach(([key, def]) => {
+    const lbl = document.createElement('label');
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'wintype';
+    radio.value = key;
+    if (key === selectedType) radio.checked = true;
+    radio.addEventListener('change', () => { selectedType = key; });
+    lbl.appendChild(radio);
+    lbl.appendChild(document.createTextNode(' ' + def.icon + ' ' + def.label));
+    body.appendChild(lbl);
+  });
+
+  dialog.appendChild(body);
+
+  const footer = document.createElement('div');
+  footer.className = 'modal-footer';
+
+  const okBtn = document.createElement('button');
+  okBtn.className = 'modal-btn default-btn';
+  okBtn.textContent = 'OK';
+  okBtn.addEventListener('click', () => {
+    const type = selectedType;
+    const def = WINDOW_TYPES[type];
+    const extra = def.create();
+    const newWin = {
+      id: 'w-' + uid(),
+      type,
+      title: def.defaultTitle,
+      flexBasis: null,
+      minimized: false,
+      ...extra,
+    };
+    // Reset all flexBasis on windows in this column so they redistribute
+    state.columns[ci].windows.forEach(w => { if (!w.minimized) w.flexBasis = null; });
+    state.columns[ci].windows.push(newWin);
+    scheduleSave();
+    closeModal();
+    render();
+  });
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'modal-btn';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', closeModal);
+
+  footer.appendChild(okBtn);
+  footer.appendChild(cancelBtn);
+  dialog.appendChild(footer);
+
+  overlay.appendChild(dialog);
+  root.appendChild(overlay);
+
+  function closeModal() {
+    root.innerHTML = '';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// TASKBAR
+// ══════════════════════════════════════════════════════
+function updateTaskbar() {
+  const tbWins = document.getElementById('taskbar-windows');
+  tbWins.innerHTML = '';
+
+  state.columns.forEach((col) => {
+    col.windows.forEach((win) => {
+      const btn = document.createElement('button');
+      btn.className = 'taskbar-win-btn' + (win.minimized ? '' : ' active');
+      btn.textContent = (WINDOW_TYPES[win.type]?.icon || '🗔') + ' ' + (win.title || 'Window');
+      btn.title = win.title;
+      btn.addEventListener('click', () => {
+        win.minimized = !win.minimized;
+        if (!win.minimized) win.flexBasis = null;
+        scheduleSave();
+        render();
+      });
+      tbWins.appendChild(btn);
+    });
+  });
+}
+
+function updateClock() {
+  const el = document.getElementById('taskbar-clock');
+  if (!el) return;
+  const now = new Date();
+  let h = now.getHours();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  const m = String(now.getMinutes()).padStart(2, '0');
+  el.textContent = h + ':' + m + ' ' + ampm;
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
+// ══════════════════════════════════════════════════════
+// START BUTTON (basic — could be extended)
+// ══════════════════════════════════════════════════════
+document.getElementById('start-btn').addEventListener('click', () => {
+  // Simple start menu: just show an alert for now
+  const root = document.getElementById('modal-root');
+  if (root.innerHTML) { root.innerHTML = ''; return; }
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;z-index:999;';
+  overlay.addEventListener('click', () => root.innerHTML = '');
+
+  const menu = document.createElement('div');
+  menu.style.cssText = `
+    position:absolute;bottom:36px;left:4px;
+    background:#c0c0c0;
+    border-top:2px solid #fff;
+    border-left:2px solid #fff;
+    border-right:2px solid #808080;
+    border-bottom:2px solid #808080;
+    box-shadow:4px 4px 0 #000;
+    min-width:180px;
+    z-index:1000;
+  `;
+
+  const items = [
+    { icon: '💾', label: 'Save Now', action: () => { saveState(); root.innerHTML = ''; alert('Layout saved!'); } },
+    { icon: '🔄', label: 'Reset to Default', action: () => { if(confirm('Reset all windows to default?')) { state = defaultState(); saveState(); render(); root.innerHTML = ''; } } },
+    { icon: '📋', label: 'Export Layout', action: () => {
+      const data = JSON.stringify(state, null, 2);
+      const blob = new Blob([data], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'win95-layout.json'; a.click();
+      root.innerHTML = '';
+    }},
+    { icon: '📁', label: 'Import Layout', action: () => {
+      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json';
+      inp.onchange = (e) => {
+        const f = e.target.files[0]; if (!f) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => { try { state = JSON.parse(ev.target.result); saveState(); render(); } catch(err) { alert('Invalid layout file'); } };
+        reader.readAsText(f);
+      };
+      inp.click();
+      root.innerHTML = '';
+    }},
+    null,
+    { icon: '🚪', label: 'Shut Down...', action: () => { if(confirm('Shut down?')) document.body.innerHTML = '<div style="background:#000;color:#0f0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:24px;">It is now safe to close your browser.</div>'; } },
+  ];
+
+  // side banner
+  const inner = document.createElement('div');
+  inner.style.cssText = 'display:flex;';
+
+  const banner = document.createElement('div');
+  banner.style.cssText = 'width:32px;background:linear-gradient(to top,#000080,#1084d0);display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;';
+  const bannerText = document.createElement('span');
+  bannerText.style.cssText = 'color:#fff;font-size:14px;font-weight:bold;writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:1px;font-family:"MS Sans Serif",Arial;';
+  bannerText.textContent = 'Win95 Desktop';
+  banner.appendChild(bannerText);
+  inner.appendChild(banner);
+
+  const menuItems = document.createElement('div');
+  menuItems.style.flex = '1';
+
+  items.forEach(item => {
+    if (!item) {
+      const sep = document.createElement('div');
+      sep.style.cssText = 'height:1px;background:#808080;margin:2px 4px;border-bottom:1px solid #fff;';
+      menuItems.appendChild(sep);
+      return;
+    }
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:11px;';
+    row.innerHTML = `<span style="font-size:16px;">${item.icon}</span><span>${item.label}</span>`;
+    row.addEventListener('mouseover', () => row.style.background = '#000080');
+    row.addEventListener('mouseover', () => { row.style.background='#000080'; row.style.color='#fff'; });
+    row.addEventListener('mouseout', () => { row.style.background=''; row.style.color=''; });
+    row.addEventListener('click', (e) => { e.stopPropagation(); item.action(); });
+    menuItems.appendChild(row);
+  });
+
+  inner.appendChild(menuItems);
+  menu.appendChild(inner);
+  overlay.appendChild(menu);
+  root.appendChild(overlay);
+});
+
+// ══════════════════════════════════════════════════════
+// BOOT & INIT
+// ══════════════════════════════════════════════════════
+render();
+
+// Auto-save reminder in console
+console.log('%cWin95 Desktop loaded. State saved in localStorage key: "' + STORAGE_KEY + '"', 'color:#008080;font-weight:bold');
+</script>
+</body>
+</html>
