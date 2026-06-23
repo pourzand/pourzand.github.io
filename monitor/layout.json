@@ -1,0 +1,38 @@
+{
+  "columns": [
+    {
+      "id": "col-0",
+      "flexBasis": null,
+      "windows": [
+        {
+          "id": "w-welcome",
+          "type": "text",
+          "title": "Welcome",
+          "flexBasis": null,
+          "minimized": false,
+          "content": "# Welcome to Win95 Desktop\n\nThis is a **retro-styled** desktop app.\n\n## Features\n- Three resizable columns\n- Text/Markdown windows\n- Stock ticker windows\n- Drag to resize windows\n- Published layout via `layout.json`\n\n## How to use\nClick **+ Add Window** at the bottom of any column to add a new window.\n\nTry editing this text — it saves automatically to your browser.\n\nUse **Start → Export for GitHub** to download changes for commit.\n\n```\nCode blocks work too\n```\n\n> Blockquotes look great"
+        }
+      ]
+    },
+    {
+      "id": "col-1",
+      "flexBasis": null,
+      "windows": [
+        {
+          "id": "w-markets",
+          "type": "stock",
+          "title": "Markets",
+          "flexBasis": null,
+          "minimized": false,
+          "symbols": ["AAPL", "TSLA", "MSFT", "GOOGL"],
+          "range": "1W"
+        }
+      ]
+    },
+    {
+      "id": "col-2",
+      "flexBasis": null,
+      "windows": []
+    }
+  ]
+}

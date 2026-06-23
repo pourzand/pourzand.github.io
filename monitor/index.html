@@ -576,11 +576,102 @@
 
   .user-select-text { user-select: text; }
   .no-select { user-select: none; }
+
+  #lock-screen {
+    position: fixed;
+    inset: 0;
+    background: #008080;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+  #lock-screen.hidden { display: none; }
+  .lock-dialog {
+    background: #c0c0c0;
+    min-width: 280px;
+    box-shadow: 4px 4px 0 #000;
+  }
+  .lock-body {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .lock-body label { font-weight: bold; }
+  .lock-body input {
+    padding: 4px 6px;
+    font-family: inherit;
+    font-size: 11px;
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    background: #fff;
+  }
+  .lock-error { color: #800000; font-size: 10px; min-height: 14px; }
+  .lock-actions { display: flex; justify-content: flex-end; gap: 6px; }
+  .lock-btn {
+    min-width: 72px;
+    height: 24px;
+    padding: 0 10px;
+    background: #c0c0c0;
+    border-top: 2px solid #ffffff;
+    border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+  }
+  .lock-btn:active {
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+  }
+
+  #desktop.hidden { display: none; }
+
+  #taskbar-draft {
+    height: 22px;
+    padding: 2px 8px;
+    background: #ffffcc;
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff;
+    border-bottom: 1px solid #ffffff;
+    font-size: 11px;
+    display: none;
+    align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+    color: #804000;
+    font-weight: bold;
+  }
+  #taskbar-draft.visible { display: flex; }
 </style>
 </head>
 <body>
 
-<div id="desktop">
+<div id="lock-screen">
+  <div class="lock-dialog raised">
+    <div class="title-bar">
+      <span class="title-bar-icon">🔒</span>
+      <span class="title-bar-text">Monitor — Sign In</span>
+    </div>
+    <div class="lock-body">
+      <label for="lock-password">Password</label>
+      <input id="lock-password" type="password" autocomplete="current-password" placeholder="Enter password">
+      <div id="lock-error" class="lock-error"></div>
+      <div class="lock-actions">
+        <button type="button" class="lock-btn" id="lock-submit">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="desktop" class="hidden">
   <div id="columns-area"></div>
   <div id="taskbar">
     <button id="start-btn">
@@ -590,6 +681,7 @@
     <div class="taskbar-divider"></div>
     <div id="taskbar-windows"></div>
     <div class="taskbar-divider"></div>
+    <div id="taskbar-draft">Draft (unpublished)</div>
     <div id="taskbar-clock"></div>
   </div>
 </div>
@@ -599,19 +691,77 @@
 
 <script>
 // ══════════════════════════════════════════════════════
+// ACCESS (session-only; change hash after setting a new password)
+// Default password: 
+// ══════════════════════════════════════════════════════
+const UNLOCK_KEY = 'monitor_unlocked';
+// const ACCESS_HASH = '7de97367c9cdc3c6db31aa114057b65cea1a7bafc71cf0595a2931011526a0a3';
+const ACCESS_HASH = 'feff1cefd4f65aa96cad30448526fbd5d42cbf86f34e7048cc4e3c269a31f56c';
+const GITHUB_LAYOUT_URL = 'https://github.com/pourzand/pourzand.github.io/edit/main/monitor/layout.json';
+
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function showDesktop() {
+  document.getElementById('lock-screen').classList.add('hidden');
+  document.getElementById('desktop').classList.remove('hidden');
+}
+
+function showLockError(msg) {
+  document.getElementById('lock-error').textContent = msg || '';
+}
+
+async function tryUnlock(password) {
+  if ((await sha256(password)) !== ACCESS_HASH) {
+    showLockError('Incorrect password.');
+    return false;
+  }
+  sessionStorage.setItem(UNLOCK_KEY, '1');
+  showLockError('');
+  showDesktop();
+  return true;
+}
+
+function bindLockScreen(onSuccess) {
+  const input = document.getElementById('lock-password');
+  const submit = document.getElementById('lock-submit');
+
+  async function attempt() {
+    if (await tryUnlock(input.value)) onSuccess();
+  }
+
+  submit.addEventListener('click', attempt);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') attempt();
+  });
+  input.focus();
+}
+
+async function ensureUnlocked() {
+  if (sessionStorage.getItem(UNLOCK_KEY) === '1') {
+    showDesktop();
+    return;
+  }
+  await new Promise((resolve) => bindLockScreen(resolve));
+}
+
+// ══════════════════════════════════════════════════════
 // STATE & PERSISTENCE
 // ══════════════════════════════════════════════════════
 const STORAGE_KEY = 'win95_desktop_v2';
+const LAYOUT_URL = 'layout.json';
 
 function defaultState() {
   return {
     columns: [
       { id: 'col-0', flexBasis: null, windows: [
-        { id: 'w-' + uid(), type: 'text', title: 'Welcome', flexBasis: null, minimized: false,
-          content: '# Welcome to Win95 Desktop\n\nThis is a **retro-styled** desktop app.\n\n## Features\n- Three resizable columns\n- Text/Markdown windows\n- Stock ticker windows\n- Drag to resize windows\n- Persistent state via localStorage\n\n## How to use\nClick **+ Add Window** at the bottom of any column to add a new window.\n\nTry editing this text — it saves automatically!\n\n```\nCode blocks work too\n```\n\n> Blockquotes look great' }
+        { id: 'w-welcome', type: 'text', title: 'Welcome', flexBasis: null, minimized: false,
+          content: '# Welcome to Win95 Desktop\n\nThis is a **retro-styled** desktop app.\n\n## Features\n- Three resizable columns\n- Text/Markdown windows\n- Stock ticker windows\n- Drag to resize windows\n- Published layout via `layout.json`\n\n## How to use\nClick **+ Add Window** at the bottom of any column to add a new window.\n\nTry editing this text — it saves automatically to your browser.\n\nUse **Start → Export for GitHub** to download changes for commit.\n\n```\nCode blocks work too\n```\n\n> Blockquotes look great' }
       ]},
       { id: 'col-1', flexBasis: null, windows: [
-        { id: 'w-' + uid(), type: 'stock', title: 'Markets', flexBasis: null, minimized: false,
+        { id: 'w-markets', type: 'stock', title: 'Markets', flexBasis: null, minimized: false,
           symbols: ['AAPL', 'TSLA', 'MSFT', 'GOOGL'], range: '1W' }
       ]},
       { id: 'col-2', flexBasis: null, windows: [] }
@@ -623,28 +773,77 @@ function uid() {
   return Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
 }
 
-function loadState() {
+async function loadPublishedLayout() {
+  const res = await fetch(LAYOUT_URL, { cache: 'no-store' });
+  if (!res.ok) throw new Error('layout missing');
+  const s = await res.json();
+  if (!s || !Array.isArray(s.columns)) throw new Error('invalid layout');
+  return s;
+}
+
+async function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const s = JSON.parse(raw);
       if (s && Array.isArray(s.columns)) return s;
     }
-  } catch(e) {}
+  } catch (e) {}
+  try {
+    return await loadPublishedLayout();
+  } catch (e) {}
   return defaultState();
 }
 
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch(e) {}
+    updateDraftIndicator();
+  } catch (e) {}
 }
 
-let state = loadState();
+let state;
+let publishedSnapshot = '';
 let saveTimer = null;
+
 function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveState, 800);
+}
+
+function isDraft() {
+  if (!publishedSnapshot) return false;
+  return JSON.stringify(state) !== publishedSnapshot;
+}
+
+function updateDraftIndicator() {
+  const el = document.getElementById('taskbar-draft');
+  if (!el) return;
+  el.classList.toggle('visible', isDraft());
+}
+
+function downloadLayoutFile() {
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'layout.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function discardDraft() {
+  if (!confirm('Discard local changes and reload the published layout?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  try {
+    state = await loadPublishedLayout();
+    publishedSnapshot = JSON.stringify(state);
+  } catch (e) {
+    state = defaultState();
+    publishedSnapshot = JSON.stringify(state);
+  }
+  render();
+  updateDraftIndicator();
 }
 
 // ══════════════════════════════════════════════════════
@@ -801,6 +1000,7 @@ function render() {
   });
 
   updateTaskbar();
+  updateDraftIndicator();
 }
 
 function buildWindowChrome(win, ci, wi) {
@@ -1312,13 +1512,14 @@ document.getElementById('start-btn').addEventListener('click', () => {
   `;
 
   const items = [
-    { icon: '💾', label: 'Save Now', action: () => { saveState(); root.innerHTML = ''; alert('Layout saved!'); } },
-    { icon: '🔄', label: 'Reset to Default', action: () => { if(confirm('Reset all windows to default?')) { state = defaultState(); saveState(); render(); root.innerHTML = ''; } } },
-    { icon: '📋', label: 'Export Layout', action: () => {
-      const data = JSON.stringify(state, null, 2);
-      const blob = new Blob([data], {type:'application/json'});
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-      a.download = 'win95-layout.json'; a.click();
+    { icon: '💾', label: 'Save Now', action: () => { saveState(); root.innerHTML = ''; alert('Draft saved in this browser.'); } },
+    { icon: '📋', label: 'Export for GitHub', action: () => {
+      downloadLayoutFile();
+      root.innerHTML = '';
+      alert('Downloaded layout.json — replace monitor/layout.json in your repo and commit.');
+    }},
+    { icon: '🌐', label: 'Open in GitHub', action: () => {
+      window.open(GITHUB_LAYOUT_URL, '_blank');
       root.innerHTML = '';
     }},
     { icon: '📁', label: 'Import Layout', action: () => {
@@ -1332,6 +1533,8 @@ document.getElementById('start-btn').addEventListener('click', () => {
       inp.click();
       root.innerHTML = '';
     }},
+    { icon: '↩️', label: 'Discard Draft', action: () => { discardDraft(); root.innerHTML = ''; } },
+    { icon: '🔄', label: 'Reset to Default', action: () => { if(confirm('Reset all windows to default?')) { state = defaultState(); saveState(); render(); root.innerHTML = ''; } } },
     null,
     { icon: '🚪', label: 'Shut Down...', action: () => { if(confirm('Shut down?')) document.body.innerHTML = '<div style="background:#000;color:#0f0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:24px;">It is now safe to close your browser.</div>'; } },
   ];
@@ -1377,10 +1580,20 @@ document.getElementById('start-btn').addEventListener('click', () => {
 // ══════════════════════════════════════════════════════
 // BOOT & INIT
 // ══════════════════════════════════════════════════════
-render();
+async function init() {
+  await ensureUnlocked();
+  try {
+    const published = await loadPublishedLayout();
+    publishedSnapshot = JSON.stringify(published);
+  } catch (e) {
+    publishedSnapshot = JSON.stringify(defaultState());
+  }
+  state = await loadState();
+  render();
+  updateDraftIndicator();
+}
 
-// Auto-save reminder in console
-console.log('%cWin95 Desktop loaded. State saved in localStorage key: "' + STORAGE_KEY + '"', 'color:#008080;font-weight:bold');
+init();
 </script>
 </body>
 </html>
